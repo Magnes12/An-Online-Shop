@@ -1,11 +1,20 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 db = SQLAlchemy()
 db.init_app(app)
 
+
+class NewUser(FlaskForm):
+    user_name = StringField('Name', validators=[DataRequired()])
+    user_password = StringField('Password', validators=[DataRequired()])
+    submit = SubmitField('Register')
 
 # class Product(db.Model):
 #     __tablename__ = 'products'
@@ -49,6 +58,14 @@ db.init_app(app)
 @app.route("/")
 def home():
     return render_template('index.html')
+
+
+@app.route("/register", methods=['POST', 'GET'])
+def register():
+    form = NewUser()
+    if form.validate_on_submit():
+        return redirect(url_for('home'))
+    return render_template('register.html', form=form)
 
 
 if __name__ == "__main__":
