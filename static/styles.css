@@ -22,6 +22,10 @@ body {
     float: right;
 }
 
+.admin_button {
+    float: left;
+}
+
 main {
     display: flex;
     flex-wrap: wrap;

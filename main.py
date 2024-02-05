@@ -60,7 +60,7 @@ class CurrentUser(FlaskForm):
 # with app.app_context():
 #     db.create_all()
 
-# # ADMIN DECORATOR 
+# # ADMIN DECORATOR
 # # def admin_only(f):
 # #     @wrapper(f)
 # #     def decorated_function(*args, **kwargs):
