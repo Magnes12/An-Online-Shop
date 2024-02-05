@@ -1,0 +1,10 @@
+<div class="admin_panel">
+    <h1>E-commerce Admin Panel</h1>
+    <nav>
+        <a href="{{ url_for('admin_panel_products') }}">Products</a>
+        <a href="{{ url_for('admin_panel_orders') }}">Orders</a>
+        <a href="{{ url_for('admin_panel_customers') }}">Customers</a>
+    </nav>
+</div>
+
+{% include "footer.html" %}

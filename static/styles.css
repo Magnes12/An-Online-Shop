@@ -15,6 +15,7 @@ body {
 .header a {
     color: white;
     padding: 20px;
+    text-decoration: none;
 }
 
 .buttons {
@@ -85,3 +86,9 @@ footer {
     width: 100%;
 }
 
+.admin_panel a {
+    color: #3498db;
+    text-decoration: none;
+    padding: 10px;
+    margin-right: 10px;
+}

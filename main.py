@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
@@ -60,11 +60,41 @@ class CurrentUser(FlaskForm):
 # with app.app_context():
 #     db.create_all()
 
+# # ADMIN DECORATOR 
+# # def admin_only(f):
+# #     @wrapper(f)
+# #     def decorated_function(*args, **kwargs):
+# #         if user.id !=1:
+# #             return abort(403)
+# #         return f(*args, **kwargs)
+
+# #     return decorated_function
+
 
 @app.route("/")
 def home():
     # TODO add functionality
     return render_template('index.html')
+
+
+@app.route("/admin")
+def admin_panel():
+    return render_template('admin.html')
+
+
+@app.route("/admin/products")
+def admin_panel_products():
+    return render_template('admin products.html')
+
+
+@app.route("/admin/orders")
+def admin_panel_orders():
+    return render_template('admin orders.html')
+
+
+@app.route("/admin/customers")
+def admin_panel_customers():
+    return render_template('admin customers.html')
 
 
 @app.route("/login", methods=['POST', 'GET'])
