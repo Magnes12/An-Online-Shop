@@ -8,14 +8,17 @@ body {
 .header {
     background-color: #3498db;
     color: white;
-    padding: 20px;
+    padding: 10px;
     text-align: center;
 }
 
 .header a {
     color: white;
     padding: 20px;
-    text-align: right;
+}
+
+.buttons {
+    float: right;
 }
 
 main {

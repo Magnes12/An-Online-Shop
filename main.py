@@ -16,6 +16,12 @@ class NewUser(FlaskForm):
     user_password = StringField('Password', validators=[DataRequired()])
     submit = SubmitField('Register')
 
+
+class CurrentUser(FlaskForm):
+    user_name = StringField('Name', validators=[DataRequired()])
+    user_password = StringField('Password', validators=[DataRequired()])
+    submit = SubmitField('Login')
+
 # class Product(db.Model):
 #     __tablename__ = 'products'
 
@@ -57,15 +63,31 @@ class NewUser(FlaskForm):
 
 @app.route("/")
 def home():
+    # TODO add functionality
     return render_template('index.html')
+
+
+@app.route("/login", methods=['POST', 'GET'])
+def login():
+    form = CurrentUser()
+    # TODO check if log in user is in db
+    if form.validate_on_submit():
+        return redirect(url_for('home'))
+    return render_template('login.html', form=form)
 
 
 @app.route("/register", methods=['POST', 'GET'])
 def register():
+    # TODO add new user to db
     form = NewUser()
     if form.validate_on_submit():
         return redirect(url_for('home'))
     return render_template('register.html', form=form)
+
+
+@app.route("/cart")
+def cart():
+    return render_template('cart.html')
 
 
 if __name__ == "__main__":
