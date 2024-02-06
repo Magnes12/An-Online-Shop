@@ -1,4 +1,5 @@
-from flask import Flask, render_template, redirect, url_for, abort, request
+from flask import Flask, render_template, redirect, url_for, abort, flash
+from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
 from classes import NewUser, CurrentUser, AddProduct 
 
@@ -94,6 +95,7 @@ def delete_product(product_id):
     db.session.commit()
     return redirect(url_for('admin_panel_products'))
 
+
 @app.route("/admin/orders")
 def admin_panel_orders():
     return render_template('admin-orders.html')
@@ -107,7 +109,6 @@ def admin_panel_customers():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     form = CurrentUser()
-    # TODO check if log in user is in db
     if form.validate_on_submit():
         return redirect(url_for('home'))
     return render_template('login.html', form=form)
@@ -115,10 +116,21 @@ def login():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    # TODO add new user to db
     form = NewUser()
     if form.validate_on_submit():
+        result = db.session.execute(db.select(User).where(User.user_name == form.user_name.data))
+        user = result.scalar()
+        if user:
+            flash("You've already signed up with that email, log in instead!")
+            return redirect(url_for('login'))
+        new_user = User(
+            user_name = form.user_name.data,
+        user_password = form.user_password.data,
+        )
+        db.session.add(new_user)
+        db.session.commit()
         return redirect(url_for('home'))
+
     return render_template('register.html', form=form)
 
 
