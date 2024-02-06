@@ -2,13 +2,17 @@ from flask import Flask, render_template, redirect, url_for, abort, flash
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from classes import NewUser, CurrentUser, AddProduct 
+from classes import NewUser, CurrentUser, AddProduct
 
 app = Flask(__name__)
+
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 db = SQLAlchemy()
 db.init_app(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 
 class Product(db.Model):
@@ -23,7 +27,7 @@ class Product(db.Model):
     orders = db.relationship('Orders', back_populates='product')
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
