@@ -2,4 +2,10 @@
 
 <p>All Customers</p>
 
+{% for customer in customer %}
+<div class="product">
+    <h2>{{ customer.user_name }}</h2>
+</div>
+{% endfor %}
+
 {% include "footer.html" %}

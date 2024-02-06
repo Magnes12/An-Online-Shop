@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, abort, flash
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from classes import NewUser, CurrentUser, AddProduct 
 
@@ -8,6 +9,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 db = SQLAlchemy()
 db.init_app(app)
+
 
 class Product(db.Model):
     __tablename__ = 'products'
@@ -50,13 +52,12 @@ with app.app_context():
 
 # # ADMIN DECORATOR
 # # def admin_only(f):
-# #     @wrapper(f)
-# #     def decorated_function(*args, **kwargs):
+# #     def wrapper(*args, **kwargs):
 # #         if user.id !=1:
 # #             return abort(403)
 # #         return f(*args, **kwargs)
 
-# #     return decorated_function
+# #     return wrapper
 
 
 @app.route("/")
@@ -76,15 +77,15 @@ def admin_panel_products():
     form = AddProduct()
     if form.validate_on_submit():
         product = Product(
-            name = form.name.data,
-            price = form.price.data,
-            stock = form.stock.data,
-            description = form.description.data,
+            name=form.name.data,
+            price=form.price.data,
+            stock=form.stock.data,
+            description=form.description.data,
         )
         db.session.add(product)
         db.session.commit()
         return redirect(url_for('admin_panel_products'))
-    
+
     return render_template('admin-products.html', form=form, products=products)
 
 
@@ -103,14 +104,28 @@ def admin_panel_orders():
 
 @app.route("/admin/customers")
 def admin_panel_customers():
-    return render_template('admin-customers.html')
+    customers = db.session.query(User).all()
+    return render_template('admin-customers.html', customers=customers)
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     form = CurrentUser()
     if form.validate_on_submit():
-        return redirect(url_for('home'))
+        password = form.user_password.data
+        result = db.session.execute(db.select(User).where(User.user_name == form.user_name.data))
+        user = result.scalar()
+
+        if not user:
+            flash("That email does not exist, please try again.")
+            return redirect(url_for('login'))
+        elif not check_password_hash(user.password, password):
+            flash('Password incorrect, please try again.')
+            return redirect(url_for('login'))
+        else:
+            login_user(user)
+            return redirect(url_for('home'))
+
     return render_template('login.html', form=form)
 
 
@@ -123,9 +138,15 @@ def register():
         if user:
             flash("You've already signed up with that email, log in instead!")
             return redirect(url_for('login'))
+
+        hash_password = generate_password_hash(
+            form.user_password.data,
+            method='pbkdf2:sha256',
+            salt_length=8
+        )
         new_user = User(
-            user_name = form.user_name.data,
-        user_password = form.user_password.data,
+            user_name=form.user_name.data,
+            user_password=hash_password,
         )
         db.session.add(new_user)
         db.session.commit()
