@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, url_for, abort, flash
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from classes import NewUser, CurrentUser, AddProduct
+from forms import NewUser, CurrentUser, AddProduct
 
 app = Flask(__name__)
 
@@ -15,11 +15,16 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
+@login_manager.user_loader
+def load_user(user_id):
+    return db.get_or_404(User, user_id)
+
+
 class Product(db.Model):
     __tablename__ = 'products'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(255), nullable=False, unique=True)
     price = db.Column(db.Float, nullable=False)
     stock = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(255), nullable=False)
@@ -31,7 +36,7 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_name = db.Column(db.String(255), nullable=False)
+    user_name = db.Column(db.String(255), nullable=False, unique=True)
     user_password = db.Column(db.String(255), nullable=False)
 
     orders = db.relationship('Orders', back_populates='user')
@@ -54,14 +59,13 @@ with app.app_context():
     db.create_all()
 
 
-# # ADMIN DECORATOR
-# # def admin_only(f):
-# #     def wrapper(*args, **kwargs):
-# #         if user.id !=1:
-# #             return abort(403)
-# #         return f(*args, **kwargs)
+def admin_only(f):
+    def wrapper(*args, **kwargs):
+        if current_user.id != 1:
+            return abort(403)
+        return f(*args, **kwargs)
 
-# #     return wrapper
+    return wrapper
 
 
 @app.route("/")
@@ -71,11 +75,13 @@ def home():
 
 
 @app.route("/admin")
+@admin_only
 def admin():
     return render_template('admin.html')
 
 
 @app.route("/admin/products", methods=["GET", "POST"])
+@admin_only
 def admin_panel_products():
     products = db.session.query(Product).all()
     form = AddProduct()
@@ -94,6 +100,7 @@ def admin_panel_products():
 
 
 @app.route("/admin/products/delete/<int:product_id>")
+@admin_only
 def delete_product(product_id):
     product_to_delete = db.get_or_404(Product, product_id)
     db.session.delete(product_to_delete)
@@ -102,14 +109,43 @@ def delete_product(product_id):
 
 
 @app.route("/admin/orders")
+@admin_only
 def admin_panel_orders():
     return render_template('admin-orders.html')
 
 
 @app.route("/admin/customers")
+@admin_only
 def admin_panel_customers():
     customers = db.session.query(User).all()
     return render_template('admin-customers.html', customers=customers)
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    form = NewUser()
+    if form.validate_on_submit():
+        result = db.session.execute(db.select(User).where(User.user_name == form.user_name.data))
+        user = result.scalar()
+        if user:
+            flash("You've already signed up with that email, log in instead!")
+            return redirect(url_for('login'))
+
+        hash_password = generate_password_hash(
+            form.user_password.data,
+            method='pbkdf2:sha256',
+            salt_length=8,
+        )
+        new_user = User(
+            user_name=form.user_name.data,
+            user_password=hash_password,
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        login_user(new_user)
+        return redirect(url_for('home'))
+
+    return render_template('register.html', form=form, current_user=current_user)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -130,33 +166,13 @@ def login():
             login_user(user)
             return redirect(url_for('home'))
 
-    return render_template('login.html', form=form)
+    return render_template('login.html', form=form, current_user=current_user)
 
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    form = NewUser()
-    if form.validate_on_submit():
-        result = db.session.execute(db.select(User).where(User.user_name == form.user_name.data))
-        user = result.scalar()
-        if user:
-            flash("You've already signed up with that email, log in instead!")
-            return redirect(url_for('login'))
-
-        hash_password = generate_password_hash(
-            form.user_password.data,
-            method='pbkdf2:sha256',
-            salt_length=8
-        )
-        new_user = User(
-            user_name=form.user_name.data,
-            user_password=hash_password,
-        )
-        db.session.add(new_user)
-        db.session.commit()
-        return redirect(url_for('home'))
-
-    return render_template('register.html', form=form)
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
 
 
 @app.route("/cart")

@@ -1,6 +1,6 @@
 {% include "header.html" %}
 
-<form method="POST" action="/">
+<form method="POST" action="{{ url_for('register') }}">
     <p> Register </p>
     {{ form.csrf_token }}
     {{ form.user_name.label }} {{ form.user_name(size=20) }}
