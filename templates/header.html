@@ -8,17 +8,27 @@
 </head>
 <body>
     <header class="header">
-        {% if current_user.id == 1: %}
-        <button class="admin_button"><a href="{{ url_for('admin') }}">Admin</a></button>
+        {% if current_user.id == 1 %}
+        <button class="admin_button">
+            <a href="{{ url_for('admin') }}">Admin</a>
+        </button>
         {% endif %}
         <button class="buttons"><a href="{{ url_for('cart') }}">Cart</a></button>
-        {% if not current_user.is_authenticated: %}
-        <button class="buttons"><a href="{{ url_for('login') }}">Login</a></button>
-        {% else: %}
-        <button class="buttons"><a href="{{ url_for('logout') }}">Log out</a></button>
+        {% if not current_user.is_authenticated %}
+        <button class="buttons">
+            <a href="{{ url_for('login') }}">Login</a>
+        </button>
+        {% else %}
+        <div class="welcome-container">
+            <p>Welcome {{ current_user.user_name }}</p>
+            <button class="buttons">
+                <a href="{{ url_for('logout') }}">Log out</a>
+            </button>
+        </div>
         {% endif %}
         <h1><a href="{{ url_for('home') }}">Shop</a></h1>
     </header>
+    
 
 
 

@@ -18,8 +18,25 @@ body {
     text-decoration: none;
 }
 
+a {
+    color: white;
+    padding: 20px;
+    text-decoration: none;
+}
+
+.header p {
+    color: white;
+    text-align: center;
+}
+
+.welcome-container {
+    display: flex; 
+    float: right;
+}
+
 .buttons {
     float: right;
+    padding: auto;
 }
 
 .admin_button {
