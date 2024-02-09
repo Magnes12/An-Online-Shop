@@ -16,11 +16,6 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return db.get_or_404(User, user_id)
-
-
 class Product(db.Model):
     __tablename__ = 'product'
 
@@ -47,8 +42,8 @@ class Cart(db.Model):
     __tablename__ = 'cart'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'),
-                        nullable=False)
+    user_name_id = db.Column(db.Integer, db.ForeignKey('user.id'),
+                             nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'),
                            nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=1)
@@ -69,13 +64,14 @@ class Cart(db.Model):
 #                            nullable=False)
 #     price = db.Column(db.Float, nullable=False)
 
-#     user = db.relationship('User', back_populates='orders')
-#     cart = db.relationship('Cart', back_populates='order')
-#     product = db.relationship('Product', back_populates='orders')
-
 
 with app.app_context():
     db.create_all()
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 
 def admin_only(f):
@@ -145,7 +141,7 @@ def admin_panel_customers():
 def register():
     form = NewUser()
     if form.validate_on_submit():
-        result = db.session.execute(db.select(User).where(User.user_name == form.user_name.data))
+        result = db.session.execute(db.select(User).where(User.username == form.user_name.data))
         user = result.scalar()
         if user:
             flash("You've already signed up with that name, log in instead!")
@@ -157,8 +153,8 @@ def register():
             salt_length=8,
         )
         new_user = User(
-            user_name=form.user_name.data,
-            user_password=hash_password,
+            username=form.user_name.data,
+            password=hash_password,
         )
         db.session.add(new_user)
         db.session.commit()
@@ -174,13 +170,13 @@ def login():
     form = CurrentUser()
     if form.validate_on_submit():
         password = form.user_password.data
-        result = db.session.execute(db.select(User).where(User.user_name == form.user_name.data))
+        result = db.session.execute(db.select(User).where(User.username == form.user_name.data))
         user = result.scalar()
 
         if not user:
             flash("That user name does not exist, please try again.")
             return redirect(url_for('login'))
-        elif not check_password_hash(user.user_password, password):
+        elif not check_password_hash(user.password, password):
             flash('Password incorrect, please try again.')
             return redirect(url_for('login'))
         else:
@@ -197,13 +193,12 @@ def logout():
 
 
 @app.route("/add_to_cart/<int:product_id>")
-@login_required
 def add_to_cart(product_id):
     if current_user.is_authenticated:
         product = db.session.query(Product).get(product_id)
         if product:
             cart_item = Cart(
-                user_id=current_user.id,
+                user_name_id=current_user.id,
                 product_id=product.id,
                 product_name=product.name,
             )
@@ -218,11 +213,11 @@ def add_to_cart(product_id):
 
 
 @app.route("/cart")
-@login_required
 def cart():
-    cart_items = Cart.query.filter_by(user_id=current_user.id).all()
+    cart_items = Cart.query.filter_by(user_name_id=current_user.id).all()
     return render_template('cart.html', cart_items=cart_items)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True,
+            port=5000)
