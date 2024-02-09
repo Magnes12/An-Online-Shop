@@ -1,5 +1,5 @@
 from flask import Flask, render_template, redirect, url_for, abort, flash
-from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user
+from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from forms import NewUser, CurrentUser, AddProduct
@@ -22,7 +22,7 @@ def load_user(user_id):
 
 
 class Product(db.Model):
-    __tablename__ = 'products'
+    __tablename__ = 'product'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
@@ -30,18 +30,16 @@ class Product(db.Model):
     stock = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String(255), nullable=False)
 
-    orders = db.relationship('Orders', back_populates='product')
     carts = db.relationship('Cart', back_populates='product')
 
 
 class User(UserMixin, db.Model):
-    __tablename__ = 'users'
+    __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_name = db.Column(db.String(255), nullable=False, unique=True)
-    user_password = db.Column(db.String(255), nullable=False)
+    username = db.Column(db.String(255), nullable=False, unique=True)
+    password = db.Column(db.String(255), nullable=False)
 
-    orders = db.relationship('Orders', back_populates='user')
     carts = db.relationship('Cart', back_populates='user')
 
 
@@ -49,23 +47,31 @@ class Cart(db.Model):
     __tablename__ = 'cart'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_name_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'),
+                        nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'),
+                           nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=1)
 
     user = db.relationship('User', back_populates='carts')
     product = db.relationship('Product', back_populates='carts')
 
 
-class Orders(db.Model):
-    __tablename__ = 'orders'
+# class Order(db.Model):
+#     __tablename__ = 'order'
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_name_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+#     id = db.Column(db.Integer, primary_key=True)
+#     user_id = db.Column(db.Integer, db.ForeignKey('user.id'),
+#                         nullable=False)
+#     cart_id = db.Column(db.Integer, db.ForeignKey('cart.id'),
+#                         nullable=False)
+#     product_id = db.Column(db.Integer, db.ForeignKey('product.id'),
+#                            nullable=False)
+#     price = db.Column(db.Float, nullable=False)
 
-    user = db.relationship('User', back_populates='orders')
-    product = db.relationship('Product', back_populates='orders')
+#     user = db.relationship('User', back_populates='orders')
+#     cart = db.relationship('Cart', back_populates='order')
+#     product = db.relationship('Product', back_populates='orders')
 
 
 with app.app_context():
@@ -84,7 +90,8 @@ def admin_only(f):
 @app.route("/")
 def home():
     products = db.session.query(Product).all()
-    return render_template('index.html', products=products, current_user=current_user)
+    return render_template('index.html', products=products,
+                           current_user=current_user)
 
 
 @app.route("/admin")
@@ -141,7 +148,7 @@ def register():
         result = db.session.execute(db.select(User).where(User.user_name == form.user_name.data))
         user = result.scalar()
         if user:
-            flash("You've already signed up with that user name, log in instead!")
+            flash("You've already signed up with that name, log in instead!")
             return redirect(url_for('login'))
 
         hash_password = generate_password_hash(
@@ -158,7 +165,8 @@ def register():
         login_user(new_user)
         return redirect(url_for('home'))
 
-    return render_template('register.html', form=form, current_user=current_user)
+    return render_template('register.html', form=form,
+                           current_user=current_user)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -189,21 +197,30 @@ def logout():
 
 
 @app.route("/add_to_cart/<int:product_id>")
+@login_required
 def add_to_cart(product_id):
-    product = db.get_or_404(Product, product_id)
-    cart_item = Cart(
-        user_name_id=current_user.id,
-        product_id=product.id,
-    )
-    db.session.add(cart_item)
-    db.session.commit()
-    flash("Product added to cart!")
+    if current_user.is_authenticated:
+        product = db.session.query(Product).get(product_id)
+        if product:
+            cart_item = Cart(
+                user_id=current_user.id,
+                product_id=product.id,
+                product_name=product.name,
+            )
+            db.session.add(cart_item)
+            db.session.commit()
+            flash("Product added to cart!")
+        else:
+            flash("Product not found!")
+    else:
+        flash("Please log in to add products to your cart.")
     return redirect(url_for('cart'))
 
 
 @app.route("/cart")
+@login_required
 def cart():
-    cart_items = Cart.query.filter_by(user_name_id=current_user.id).all()
+    cart_items = Cart.query.filter_by(user_id=current_user.id).all()
     return render_template('cart.html', cart_items=cart_items)
 
 

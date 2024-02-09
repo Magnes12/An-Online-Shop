@@ -24,6 +24,12 @@ a {
     text-decoration: none;
 }
 
+.register{
+    color: #3498db;
+    padding: 20px;
+    text-decoration: none;
+}
+
 .header p {
     color: white;
     text-align: center;
@@ -112,4 +118,11 @@ footer {
     text-decoration: none;
     padding: 10px;
     margin-right: 10px;
+}
+
+.cart {
+    background-color: #f0f0f0; 
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px; 
 }
