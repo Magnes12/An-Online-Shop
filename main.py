@@ -200,7 +200,6 @@ def add_to_cart(product_id):
             cart_item = Cart(
                 user_name_id=current_user.id,
                 product_id=product.id,
-                product_name=product.name,
             )
             db.session.add(cart_item)
             db.session.commit()
@@ -215,7 +214,13 @@ def add_to_cart(product_id):
 @app.route("/cart")
 def cart():
     cart_items = Cart.query.filter_by(user_name_id=current_user.id).all()
-    return render_template('cart.html', cart_items=cart_items)
+    product_names = {}
+    for item in cart_items:
+        product = Product.query.get(item.product_id)
+        product_names[item.product_id] = {'name': product.name,
+                                          'price': product.price}
+    return render_template('cart.html', cart_items=cart_items,
+                           product_names=product_names)
 
 
 if __name__ == "__main__":

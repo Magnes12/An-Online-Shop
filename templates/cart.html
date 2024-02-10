@@ -2,7 +2,12 @@
 
 {% for cart_item in cart_items %}
 <div class="cart">
-    <p>{{ cart_item.product_name }} - {{ cart_item.quantity }} PCS.</p>
+    {% for item in cart_items %}
+    <p>Product Name: {{ product_names[item.product_id]['name'] }}</p>
+    <p>Price: {{ product_names[item.product_id]['price'] * cart_item.quantity}} $</p>
+    {% endfor %}
+    <p>{{ cart_item.quantity }} PCS. </p>
+
 </div>
 {% endfor %}
 
