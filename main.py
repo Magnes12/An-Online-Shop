@@ -193,19 +193,27 @@ def logout():
 
 
 @app.route("/add_to_cart/<int:product_id>")
+@login_required
 def add_to_cart(product_id):
     if current_user.is_authenticated:
-        product = db.session.query(Product).get(product_id)
-        if product:
-            cart_item = Cart(
-                user_name_id=current_user.id,
-                product_id=product.id,
-            )
-            db.session.add(cart_item)
+        cart_item = Cart.query.filter_by(user_name_id=current_user.id,
+                                         product_id=product_id).first()
+        if cart_item:
+            cart_item.quantity += 1
             db.session.commit()
-            flash("Product added to cart!")
+            flash("Quantity updated in the cart!")
         else:
-            flash("Product not found!")
+            product = db.session.query(Product).get(product_id)
+            if product:
+                cart_item = Cart(
+                    user_name_id=current_user.id,
+                    product_id=product.id,
+                )
+                db.session.add(cart_item)
+                db.session.commit()
+                flash("Product added to cart!")
+            else:
+                flash("Product not found!")
     else:
         flash("Please log in to add products to your cart.")
     return redirect(url_for('cart'))

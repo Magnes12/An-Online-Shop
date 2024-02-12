@@ -1,14 +1,13 @@
 {% include "header.html" %}
 
 {% for cart_item in cart_items %}
-<div class="cart">
     {% for item in cart_items %}
+<div class="cart">
     <p>Product Name: {{ product_names[item.product_id]['name'] }}</p>
     <p>Price: {{ product_names[item.product_id]['price'] * cart_item.quantity}} $</p>
-    {% endfor %}
     <p>{{ cart_item.quantity }} PCS. </p>
-
 </div>
+    {% endfor %}
 {% endfor %}
 
 {% include "footer.html" %}
