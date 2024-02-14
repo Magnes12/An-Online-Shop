@@ -36,6 +36,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(255), nullable=False)
 
     carts = db.relationship('Cart', back_populates='user')
+    orders = db.relationship('Order', back_populates='user')
 
 
 class Cart(db.Model):
@@ -50,19 +51,21 @@ class Cart(db.Model):
 
     user = db.relationship('User', back_populates='carts')
     product = db.relationship('Product', back_populates='carts')
+    orders = db.relationship('Order', back_populates='cart')
 
 
-# class Order(db.Model):
-#     __tablename__ = 'order'
+class Order(db.Model):
+    __tablename__ = 'order'
 
-#     id = db.Column(db.Integer, primary_key=True)
-#     user_id = db.Column(db.Integer, db.ForeignKey('user.id'),
-#                         nullable=False)
-#     cart_id = db.Column(db.Integer, db.ForeignKey('cart.id'),
-#                         nullable=False)
-#     product_id = db.Column(db.Integer, db.ForeignKey('product.id'),
-#                            nullable=False)
-#     price = db.Column(db.Float, nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'),
+                        nullable=False)
+    cart_id = db.Column(db.Integer, db.ForeignKey('cart.id'),
+                        nullable=False)
+    price = db.Column(db.Float, nullable=False)
+
+    user = db.relationship('User', back_populates='orders')
+    cart = db.relationship('Cart', back_populates='orders')
 
 
 with app.app_context():
@@ -127,7 +130,8 @@ def delete_product(product_id):
 @app.route("/admin/orders")
 @admin_only
 def admin_panel_orders():
-    return render_template('admin-orders.html')
+    orders = db.session.query(Order).all()
+    return render_template('admin-orders.html', orders=orders)
 
 
 @app.route("/admin/customers")
@@ -229,6 +233,28 @@ def cart():
                                           'price': product.price}
     return render_template('cart.html', cart_items=cart_items,
                            product_names=product_names)
+
+
+@app.route("/cart/payment/<int:cart_id>")
+@login_required
+def payment(cart_id):
+    if current_user.is_authenticated:
+        cart_item = Cart.query.filter_by(user_name_id=current_user.id,
+                                         id=cart_id).first()
+        product_item = Product.query.filter_by(id=cart_item.product_id).first()
+        if cart_item:
+            order = Order(
+                user_id=current_user.id,
+                cart_id=cart_item.id,
+                price=cart_item.quantity*product_item.price,
+            )
+            db.session.add(order)
+            db.session.commit()
+            flash("Order set!")
+            return redirect(url_for('home'))
+
+    flash("Error processing payment. Please check your cart.")
+    return redirect(url_for('cart'))
 
 
 if __name__ == "__main__":

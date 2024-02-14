@@ -6,6 +6,7 @@
     <p>Product Name: {{ product_names[item.product_id]['name'] }}</p>
     <p>Price: {{ product_names[item.product_id]['price'] * cart_item.quantity}} $</p>
     <p>{{ cart_item.quantity }} PCS. </p>
+    <button><a href="{{ url_for('payment', cart_id=cart_item.id)  }}">Pay</a></button>
 </div>
     {% endfor %}
 {% endfor %}
