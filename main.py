@@ -242,11 +242,13 @@ def payment(cart_id):
         cart_item = Cart.query.filter_by(user_name_id=current_user.id,
                                          id=cart_id).first()
         product_item = Product.query.filter_by(id=cart_item.product_id).first()
+
         if cart_item:
+            price_all = cart_item.quantity * product_item.price
             order = Order(
                 user_id=current_user.id,
                 cart_id=cart_item.id,
-                price=cart_item.quantity*product_item.price,
+                price=price_all,
             )
             db.session.add(order)
             db.session.commit()
